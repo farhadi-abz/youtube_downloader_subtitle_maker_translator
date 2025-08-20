@@ -1,0 +1,13 @@
+[project]
+name = "moviepy-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "moviepy>=2.2.1",
+    "ollama>=0.5.3",
+    "openai-whisper>=20250625",
+    "rich>=14.1.0",
+    "yt-dlp>=2025.8.20",
+]

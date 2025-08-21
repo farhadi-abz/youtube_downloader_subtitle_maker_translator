@@ -1,5 +1,8 @@
+import Functions
+
+
 def main():
-    print("Hello from moviepy-project!")
+    pass
 
 
 if __name__ == "__main__":

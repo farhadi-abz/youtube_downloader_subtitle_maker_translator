@@ -210,6 +210,7 @@ def make_translated_subscene(input_file_path: str) -> str:
                     text = parts[2]
                     modified_text = translate_text(input_text=text)
                     new_line = f"{start_time} ---> {end_time} ---> {modified_text}\n"
+                    print(new_line)
                     outfile.write(new_line)
                 else:
                     print(f"Warning: Skipping malformed line: {line}")

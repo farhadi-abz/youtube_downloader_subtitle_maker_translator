@@ -1,12 +1,15 @@
 import moviepy
+from moviepy.video.tools.subtitles import SubtitlesClip
+
 import os
 import yt_dlp
 from rich import print
 import whisper
 import torch
 import ollama
-import time
-import re
+
+
+print(moviepy.config.check())
 
 
 def youtube_download(
@@ -270,3 +273,93 @@ def get_youtube_formats(url: str) -> list[str] | None:
         return None
 
     return formatted_list
+
+
+def embed_subtitle(video_path, subtitle_path):
+    """
+    Embeds an SRT subtitle file into a video file.
+
+    The function creates a new video file with the subtitles "burned in"
+    to the video frames. It aims to preserve the original video's quality.
+
+    Args:
+        video_path (str): The full path to the input video file.
+        subtitle_path (str): The full path to the .srt subtitle file.
+
+    Returns:
+        str: The path to the newly created video file with subtitles,
+             or None if an error occurred.
+    """
+    print(f"Starting to process video: {video_path}")
+    print(f"With subtitles: {subtitle_path}")
+
+    # Check if input files exist
+    if not os.path.exists(video_path):
+        print(f"Error: Video file not found at {video_path}")
+        return None
+    if not os.path.exists(subtitle_path):
+        print(f"Error: Subtitle file not found at {subtitle_path}")
+        return None
+
+    try:
+        # Load the original video clip
+        video_clip = moviepy.VideoFileClip(video_path)
+
+        # Define the output path for the new video
+        # It will be named like 'my_movie_subtitled.mp4'
+        path_parts = os.path.splitext(video_path)
+        output_path = f"{path_parts[0]}_subtitled.mp4"
+
+        print(f"Output will be saved to: {output_path}")
+
+        # Create a generator for the SubtitlesClip.
+        # This function is more robust for different text encodings.
+        # You can customize the font and fontsize here.
+        # For Persian/Arabic subtitles, you might need a font like 'Tahoma' or 'Vazirmatn'.
+        generator = lambda txt: moviepy.TextClip(
+            txt,
+            font="arial",  # A commonly available font
+            font_size=24,
+            color="white",
+            stroke_color="black",
+            stroke_width=0.5,
+        )
+
+        # Create the subtitles clip
+        subtitles_clip = SubtitlesClip(subtitle_path, generator, encoding="utf-8")
+
+        # Composite the video and subtitles
+        # The subtitles will be placed at the bottom of the video
+        final_clip = moviepy.CompositeVideoClip(
+            [video_clip, subtitles_clip.with_position(("center", "bottom"))]
+        )
+
+        # Write the final video file to disk
+        # We specify codecs and parameters to maintain quality.
+        # 'libx264' is a high-quality video codec.
+        # 'aac' is a standard audio codec.
+        # The 'preset' affects encoding speed vs. file size. 'medium' is a good balance.
+        # The original video's fps is used to ensure smoothness.
+        print("Writing final video file... This may take a while.")
+        final_clip.write_videofile(
+            output_path,
+            codec="libx264",
+            audio_codec="aac",
+            temp_audiofile="temp-audio.m4a",
+            remove_temp=True,
+            preset="medium",
+            fps=video_clip.fps,
+        )
+
+        print("Successfully embedded subtitles!")
+        return output_path
+
+    except Exception as e:
+        print(f"An error occurred during the process: {e}")
+        return None
+
+
+embed_subtitle(
+    video_path="./Movies/How to Scrape Data From Any Website Using Deepseek.mp4",
+    subtitle_path="Movies/How to Scrape Data From Any Website Using Deepseek.srt",
+)

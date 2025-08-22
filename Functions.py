@@ -8,9 +8,6 @@ import ollama
 import time
 import re
 
-os.system(command="cls" if os.name == "nt" else "clear")
-print(moviepy.config.check())
-
 
 def sanitize_filename(filename):
     """
@@ -65,7 +62,7 @@ def get_ydl_options(quality="720p"):
     return options
 
 
-def download_video(url, quality_setting):
+def youtube_downloader(url, quality_setting):
     """
     Downloads a video from the URL with specified quality, saves it to ./Movies,
     checks for existing files, and returns the final file path.
@@ -136,7 +133,7 @@ def format_timestamp(seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
 
-def generate_srt_from_whisper(
+def generate_srt_from_video_by_whisper(
     video_path: str,
     language: str = "en",
 ):
@@ -165,11 +162,20 @@ def generate_srt_from_whisper(
     srt_filename = os.path.splitext(video_path)[0] + ".srt"
     if os.path.exists(path=srt_filename):
         print(f"[bold blue]The file already exist[/bold blue]")
+        return srt_filename
     else:
         print(f"starting transcription for '{video_path}'...")
         # whisper handles audio extraction automatically from video files.
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if device == "cuda":
+            use_fp16 = True
+        else:
+            use_fp16 = False
         result = model.transcribe(
-            video_path, verbose=True
+            video_path,
+            verbose=True,
+            fp16=use_fp16,
+            language=language,
         )  # verbose=true prints progress
         print("transcription completed.")
 
@@ -185,7 +191,7 @@ def generate_srt_from_whisper(
                 srt_file.write(f"{text}\n\n")
 
         print("srt file created successfully!")
-    return srt_filename
+        return srt_filename
 
 
 def translate_text(
@@ -230,7 +236,11 @@ def translate_text(
     return translated_text
 
 
-def translate_srt_file(file_path: str):
+def translate_srt_file(
+    file_path: str,
+    source_language: str = "English",
+    target_language: str = "Persian(Farsi)",
+):
     """
     Reads an SRT file, translates the text content of each subtitle,
     and overwrites the file with the translated version.
@@ -253,10 +263,10 @@ def translate_srt_file(file_path: str):
 
     # Split the file into subtitle blocks. Blocks are separated by double newlines.
     subtitle_blocks = content.strip().split("\n\n")
-
+    blocks_total_number = len(subtitle_blocks)
     translated_blocks = []
 
-    for block in subtitle_blocks:
+    for index, block in enumerate(subtitle_blocks):
         if not block.strip():
             continue
 
@@ -276,12 +286,19 @@ def translate_srt_file(file_path: str):
         original_text = "\n".join(lines[2:])
 
         # Translate the text using our placeholder function
-        translated_text = translate_text(input_text=original_text, model="gemma3:4b")
+        translated_text = translate_text(
+            input_text=original_text,
+            model="gemma3:4b",
+            source_lang=source_language,
+            target_lang=target_language,
+        )
 
         # Reconstruct the block with the translated text
         new_block = f"{sequence_number}\n{timestamp}\n{translated_text}"
         translated_blocks.append(new_block)
-
+        print(
+            f"translate block number: [bold green]{index}[/bold green] from [bold yellow]{blocks_total_number}[/bold yellow] blocks"
+        )
     # Join the translated blocks back together
     new_content = "\n\n".join(translated_blocks)
 
@@ -290,14 +307,6 @@ def translate_srt_file(file_path: str):
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(new_content)
         print(f"Successfully translated and updated the file: {file_path}")
+        return file_path
     except Exception as e:
         print(f"Error writing the translated content to the file: {e}")
-
-
-movie_path = download_video(
-    url="https://youtu.be/13Fe36L9sYQ?si=fCs0VebZnPYjrjX1", quality_setting="1080p"
-)
-
-srt_file_path = generate_srt_from_whisper(video_path=movie_path)
-
-translate_srt_file(file_path=srt_file_path)

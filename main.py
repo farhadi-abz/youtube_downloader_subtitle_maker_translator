@@ -1,8 +1,94 @@
 import Functions
+import gradio as gr
+import os
 
 
 def main():
-    pass
+    os.system(command="cls" if os.name == "nt" else "clear")
+    with gr.Blocks(theme=gr.themes.Origin()) as gui:
+        gr.Markdown("# Gradio subtitle Tool")
+        choose = gr.Radio(
+            label="Choose function you want: ",
+            choices=[
+                "youtube_downloader",
+                "extract_subtitle_from_video",
+                "translate_subtitle",
+            ],
+            value="youtube_downloader",
+        )
+
+        @gr.render(inputs=choose)
+        def render_app(method):
+            if method == "youtube_downloader":
+                with gr.Column():
+                    input_youtube_video_address = gr.Textbox(label="Youtube URL:")
+                    input_video_quality = gr.Radio(
+                        choices=["audio", "480p", "720p", "1080p"]
+                    )
+                    btn_youtube_downloader = gr.Button("Start Download")
+                    output_video_player = gr.Video()
+                    btn_youtube_downloader.click(
+                        fn=Functions.youtube_downloader,
+                        inputs=[input_youtube_video_address, input_video_quality],
+                        outputs=output_video_player,
+                    )
+            elif method == "extract_subtitle_from_video":
+                with gr.Column():
+                    input_video_address = gr.File(
+                        label="Uploade the video file you want to subtitle:"
+                    )
+                    input_subtitle_language = gr.Radio(
+                        choices=["en", "fa"], label="Choose subtitle language:"
+                    )
+                    btn_extract_subtitle = gr.Button("Start Extract Subtitle")
+                    output_subtitle_file = gr.File(label="This is the subtitle file")
+                    btn_extract_subtitle.click(
+                        fn=Functions.generate_srt_from_video_by_whisper,
+                        inputs=[input_video_address, input_subtitle_language],
+                        outputs=output_subtitle_file,
+                    )
+            elif method == "translate_subtitle":
+                with gr.Column():
+                    input_subtitle_file = gr.File(
+                        label="Upload the subtitle you want to translate:"
+                    )
+                    input_source_language = gr.Radio(
+                        choices=[
+                            "English",
+                            "Persian(Farsi)",
+                            "Japanes",
+                            "Arabic",
+                            "Chineas",
+                            "German",
+                        ],
+                        label="choose your source language :",
+                    )
+                    input_taget_language = gr.Radio(
+                        choices=[
+                            "English",
+                            "Persian(Farsi)",
+                            "Japanes",
+                            "Arabic",
+                            "Chineas",
+                            "German",
+                        ],
+                        label="choose your target language :",
+                    )
+                    btn_translate_subtitle = gr.Button("Start Translate Subtitle")
+                    output_translated_subtitle_file = gr.File(
+                        label="Download your translated subtitle file: "
+                    )
+                    btn_translate_subtitle.click(
+                        fn=Functions.translate_srt_file,
+                        inputs=[
+                            input_subtitle_file,
+                            input_source_language,
+                            input_taget_language,
+                        ],
+                        outputs=output_translated_subtitle_file,
+                    )
+
+    gui.launch()
 
 
 if __name__ == "__main__":

@@ -3,10 +3,22 @@ import gradio as gr
 import os
 
 
+def get_dynamic_choices_for_ollama_models():
+    ollama_models = Functions.ollama_models_info_list()
+    return gr.Radio(label="choose your llm for translation:", choices=ollama_models)
+
+
+def get_dynamic_choices_for_whisper_languages():
+    whisper_languages = Functions.get_all_whisper_languages_supports()
+    return gr.Dropdown(
+        label="choose your subtitle language: ", choices=whisper_languages
+    )
+
+
 def main():
     os.system(command="cls" if os.name == "nt" else "clear")
-    with gr.Blocks(theme=gr.themes.Origin()) as gui:
-        gr.Markdown("# Gradio subtitle Tool")
+    with gr.Blocks() as gui:
+        gr.Markdown("# Gradio subtitle translation Tool")
         choose = gr.Radio(
             label="Choose function you want: ",
             choices=[
@@ -37,9 +49,7 @@ def main():
                     input_video_address = gr.File(
                         label="Uploade the video file you want to subtitle:"
                     )
-                    input_subtitle_language = gr.Radio(
-                        choices=["en", "fa"], label="Choose subtitle language:"
-                    )
+                    input_subtitle_language = gr.Dropdown()
                     btn_extract_subtitle = gr.Button("Start Extract Subtitle")
                     output_subtitle_file = gr.File(label="This is the subtitle file")
                     btn_extract_subtitle.click(
@@ -47,8 +57,14 @@ def main():
                         inputs=[input_video_address, input_subtitle_language],
                         outputs=output_subtitle_file,
                     )
+                gui.load(
+                    fn=get_dynamic_choices_for_whisper_languages,
+                    inputs=None,
+                    outputs=input_subtitle_language,
+                )
             elif method == "translate_subtitle":
                 with gr.Column():
+                    input_ollama_model_for_translation = gr.Radio(interactive=True)
                     input_subtitle_file = gr.File(
                         label="Upload the subtitle you want to translate:"
                     )
@@ -60,6 +76,8 @@ def main():
                             "Arabic",
                             "Chineas",
                             "German",
+                            "Russian",
+                            "Spanish",
                         ],
                         label="choose your source language :",
                     )
@@ -71,9 +89,12 @@ def main():
                             "Arabic",
                             "Chineas",
                             "German",
+                            "Russian",
+                            "Spanish",
                         ],
                         label="choose your target language :",
                     )
+
                     btn_translate_subtitle = gr.Button("Start Translate Subtitle")
                     output_translated_subtitle_file = gr.File(
                         label="Download your translated subtitle file: "
@@ -81,14 +102,20 @@ def main():
                     btn_translate_subtitle.click(
                         fn=Functions.translate_srt_file,
                         inputs=[
+                            input_ollama_model_for_translation,
                             input_subtitle_file,
                             input_source_language,
                             input_taget_language,
                         ],
                         outputs=output_translated_subtitle_file,
                     )
+                gui.load(
+                    fn=get_dynamic_choices_for_ollama_models,
+                    inputs=None,
+                    outputs=input_ollama_model_for_translation,
+                )
 
-    gui.launch()
+    gui.launch(allowed_paths=["./Movies/"])
 
 
 if __name__ == "__main__":

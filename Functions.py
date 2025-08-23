@@ -9,6 +9,26 @@ import time
 import re
 
 
+def get_all_whisper_languages_supports():
+    supported_languages = sorted(list(whisper.tokenizer.LANGUAGES.values()))
+    return supported_languages
+
+
+def ollama_models_info_list():
+    models_list = ollama.list().models
+    models_info = []
+    # make a list of tupples that ready for Gradio choosing elements
+    for model in models_list:
+        models_info.append(
+            (
+                f"{model.model.upper()} ->({model.size.human_readable()}) ",
+                model.model,
+            )
+        )
+
+    return models_info
+
+
 def sanitize_filename(filename):
     """
     Removes characters that are invalid in Windows and Linux filenames.
@@ -68,7 +88,7 @@ def youtube_downloader(url, quality_setting):
     checks for existing files, and returns the final file path.
     """
     movies_dir = "Movies"
-    os.makedirs(movies_dir, exist_ok=True)
+    musics_dir = "Musics"
 
     try:
         # Get video metadata (like the title) without downloading
@@ -81,7 +101,12 @@ def youtube_downloader(url, quality_setting):
         # --- START OF CORRECTION ---
 
         # 1. Define the base path WITHOUT the extension
-        base_filepath = os.path.join(movies_dir, sanitized_title)
+        if quality_setting == "audio":
+            os.makedirs(musics_dir, exist_ok=True)
+            base_filepath = os.path.join(musics_dir, sanitized_title)
+        else:
+            os.makedirs(movies_dir, exist_ok=True)
+            base_filepath = os.path.join(movies_dir, sanitized_title)
 
         # 2. Define the final path WITH extension for checking and returning
         final_filepath = base_filepath + ".mp4"
@@ -160,6 +185,8 @@ def generate_srt_from_video_by_whisper(
 
     # define the output srt filename
     srt_filename = os.path.splitext(video_path)[0] + ".srt"
+    srt_filename = srt_filename.replace("\\", "/")
+
     if os.path.exists(path=srt_filename):
         print(f"[bold blue]The file already exist[/bold blue]")
         return srt_filename
@@ -237,10 +264,12 @@ def translate_text(
 
 
 def translate_srt_file(
+    ollama_model: str,
     file_path: str,
     source_language: str = "English",
     target_language: str = "Persian(Farsi)",
 ):
+    file_path = file_path.replace("\\", "/")
     """
     Reads an SRT file, translates the text content of each subtitle,
     and overwrites the file with the translated version.
@@ -288,7 +317,7 @@ def translate_srt_file(
         # Translate the text using our placeholder function
         translated_text = translate_text(
             input_text=original_text,
-            model="gemma3:4b",
+            model=ollama_model,
             source_lang=source_language,
             target_lang=target_language,
         )

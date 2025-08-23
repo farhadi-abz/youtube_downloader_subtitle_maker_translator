@@ -111,21 +111,6 @@ def audio_to_text(
     return subscene_in_source_language_path
 
 
-def ollama_models_info_list():
-    models_list = ollama.list().models
-    models_info = []
-    # make a list of tupples that ready for Gradio choosing elements
-    for model in models_list:
-        models_info.append(
-            (
-                f"'{model.model.upper()}' with {model.size.human_readable()} size ",
-                model.model,
-            )
-        )
-
-    return models_info
-
-
 def make_translated_subscene(input_file_path: str) -> str:
     subscene_in_target_language_path = (
         os.path.splitext(input_file_path)[0] + "_translated" + ".txt"

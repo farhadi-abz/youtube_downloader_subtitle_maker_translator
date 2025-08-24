@@ -1,4 +1,3 @@
-import moviepy
 import os
 import yt_dlp
 from rich import print
@@ -160,7 +159,7 @@ def format_timestamp(seconds: float) -> str:
 
 def generate_srt_from_video_by_whisper(
     video_path: str,
-    language: str = "en",
+    language: str = "english",
 ):
     """
     generates an srt file from a video using whisper.
@@ -169,10 +168,10 @@ def generate_srt_from_video_by_whisper(
         video_path (str): the path to the input video file.
         model_name (str): the name of the whisper model to use (e.g., "tiny", "base", "small", "medium", "large").
     """
-    if language == "en":
+    if language == "english":
         model_name = "small.en"
     else:
-        model_name: str = "turbo"
+        model_name: str = "large-v3"
     if not os.path.exists(video_path):
         print(f"error: video file not found at '{video_path}'")
         return

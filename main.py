@@ -78,6 +78,7 @@ def main():
                             "German",
                             "Russian",
                             "Spanish",
+                            "French",
                         ],
                         label="choose your source language :",
                     )
@@ -91,6 +92,7 @@ def main():
                             "German",
                             "Russian",
                             "Spanish",
+                            "French",
                         ],
                         label="choose your target language :",
                     )

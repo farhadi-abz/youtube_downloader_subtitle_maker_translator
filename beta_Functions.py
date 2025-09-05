@@ -342,9 +342,3 @@ def embed_subtitle(video_path, subtitle_path):
     except Exception as e:
         print(f"An error occurred during the process: {e}")
         return None
-
-
-embed_subtitle(
-    video_path="./Movies/How to Scrape Data From Any Website Using Deepseek.mp4",
-    subtitle_path="Movies/How to Scrape Data From Any Website Using Deepseek.srt",
-)

@@ -16,12 +16,6 @@ uv venv
 uv add moviepy yt_dlp rich openai-whisper ollama gradio
 ```
 
-###### که باید پاسخی شبیه به این را به ما برگرداند:
-```bash
-MoviePy: ffmpeg successfully found in '<project folder>\.venv\Lib\site-packages\imageio_ffmpeg\binaries\ffmpeg-win-x86_64-v7.1.exe'.
-MoviePy: ffplay successfully found in 'ffplay'.
-
-```
 ### اگر کارت گرافیک مناسبی داریم می تونیم از سایت Pytorch.org پکیج torch مناسب رو نصب کنیم و سپس با اجرای فایل test-cuda.py از کارکرد صحیح آن اطمینان حاصل کنیم . اگر در خروجی Using device: cuda نمایش داده شد یعنی کارت گرافیک در صورت کافی بودن میزان رم برای مدل مورد نظر در الویت قرار می گیرد و طبعا کارایی بسیار بالاتری ایجاد می شود.
 
 ```bash

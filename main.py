@@ -35,7 +35,8 @@ def main():
                 with gr.Column():
                     input_youtube_video_address = gr.Textbox(label="Youtube URL:")
                     input_video_quality = gr.Radio(
-                        choices=["audio", "480p", "720p", "1080p"]
+                        label="Video Quality:",
+                        choices=["audio", "480p", "720p", "1080p"],
                     )
                     btn_youtube_downloader = gr.Button("Start Download")
                     output_video_player = gr.Video()

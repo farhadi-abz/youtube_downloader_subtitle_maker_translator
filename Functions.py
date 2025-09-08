@@ -16,7 +16,6 @@ def get_all_whisper_languages_supports():
 def ollama_models_info_list():
     models_list = ollama.list().models
     models_info = []
-    # make a list of tupples that ready for Gradio choosing elements
     for model in models_list:
         models_info.append(
             (
@@ -32,9 +31,7 @@ def sanitize_filename(filename):
     """
     Removes characters that are invalid in Windows and Linux filenames.
     """
-    # Remove invalid characters
     sanitized = re.sub(r'[\\/*?:"<>|]', "", filename)
-    # Replace whitespace sequences with a single space
     sanitized = re.sub(r"\s+", " ", sanitized).strip()
     return sanitized
 
@@ -46,7 +43,6 @@ def get_ydl_options(quality="720p"):
     """
     options = {
         "format": "bestvideo[height<=720]+bestaudio/best[height<=720]",
-        # This postprocessor ensures the final merged file is in an mp4 container.
         "postprocessors": [
             {
                 "key": "FFmpegVideoRemuxer",
@@ -56,14 +52,13 @@ def get_ydl_options(quality="720p"):
     }
 
     if quality == "audio":
-        # Options for best audio only. We prefer m4a which is an mp4 container.
         options.update(
             {
                 "format": "bestaudio[ext=m4a]/bestaudio",
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
-                        "preferredcodec": "aac",  # AAC is a common codec for mp4 audio
+                        "preferredcodec": "aac",
                     }
                 ],
             }
@@ -76,7 +71,6 @@ def get_ydl_options(quality="720p"):
         options["format"] = "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
     else:
         print(f"Warning: Invalid quality '{quality}'. Defaulting to 720p.")
-        # Default is already set
 
     return options
 
@@ -90,16 +84,12 @@ def youtube_downloader(url, quality_setting):
     musics_dir = "Musics"
 
     try:
-        # Get video metadata (like the title) without downloading
         info_opts = {"quiet": True, "no_warnings": True}
         with yt_dlp.YoutubeDL(info_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             title = info.get("title", "untitled_video")
             sanitized_title = sanitize_filename(title)
 
-        # --- START OF CORRECTION ---
-
-        # 1. Define the base path WITHOUT the extension
         if quality_setting == "audio":
             os.makedirs(musics_dir, exist_ok=True)
             base_filepath = os.path.join(musics_dir, sanitized_title)
@@ -107,7 +97,6 @@ def youtube_downloader(url, quality_setting):
             os.makedirs(movies_dir, exist_ok=True)
             base_filepath = os.path.join(movies_dir, sanitized_title)
 
-        # 2. Define the final path WITH extension for checking and returning
         final_filepath = base_filepath + ".mp4"
 
         if os.path.exists(final_filepath):
@@ -117,10 +106,7 @@ def youtube_downloader(url, quality_setting):
         print(f"Starting download for: '{title}'")
         ydl_opts = get_ydl_options(quality_setting)
 
-        # 3. Pass the base path (without extension) to yt-dlp's outtmpl
         ydl_opts["outtmpl"] = base_filepath
-
-        # --- END OF CORRECTION ---
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
@@ -129,8 +115,6 @@ def youtube_downloader(url, quality_setting):
         return final_filepath
 
     except Exception as e:
-        # Since you are in Iran, network errors can be common.
-        # This will catch errors if the video is unavailable or the connection fails.
         if "HTTP Error 403" in str(e):
             print(
                 f"An error occurred: Access to the video is forbidden (HTTP 403). It might be region-locked."
@@ -177,12 +161,9 @@ def generate_srt_from_video_by_whisper(
         return
 
     print(f"loading whisper model: '{model_name}'...")
-    # on systems without a powerful gpu, you can force cpu usage
-    # model = whisper.load_model(model_name, device="cpu")
     model = whisper.load_model(model_name)
     print("model loaded successfully.")
 
-    # define the output srt filename
     srt_filename = os.path.splitext(video_path)[0] + ".srt"
     srt_filename = srt_filename.replace("\\", "/")
 
@@ -191,7 +172,6 @@ def generate_srt_from_video_by_whisper(
         return srt_filename
     else:
         print(f"starting transcription for '{video_path}'...")
-        # whisper handles audio extraction automatically from video files.
         device = "cuda" if torch.cuda.is_available() else "cpu"
         if device == "cuda":
             use_fp16 = True
@@ -202,7 +182,7 @@ def generate_srt_from_video_by_whisper(
             verbose=True,
             fp16=use_fp16,
             language=language,
-        )  # verbose=true prints progress
+        )
         print("transcription completed.")
 
         print(f"saving subtitles to '{srt_filename}'...")
@@ -241,7 +221,7 @@ def translate_text(
         7. No {source_lang} Words: Do not use any {source_lang} words or phrases in your translation.
         """
     )
-    start_time = time.time()  # to avoid rate limit
+    start_time = time.time()
     response = ollama.chat(
         think=False,
         model=model,
@@ -289,7 +269,6 @@ def translate_srt_file(
         print(f"Error reading the file: {e}")
         return
 
-    # Split the file into subtitle blocks. Blocks are separated by double newlines.
     subtitle_blocks = content.strip().split("\n\n")
     blocks_total_number = len(subtitle_blocks)
     translated_blocks = []
@@ -300,20 +279,15 @@ def translate_srt_file(
 
         lines = block.split("\n")
 
-        # A valid block has at least 3 lines: number, timestamp, text
         if len(lines) < 3:
-            # It might be an invalid block, so we keep it as is
             translated_blocks.append(block)
             continue
 
-        # The first two lines are the sequence number and the timestamp
         sequence_number = lines[0]
         timestamp = lines[1]
 
-        # The rest of the lines are the subtitle text
         original_text = "\n".join(lines[2:])
 
-        # Translate the text using our placeholder function
         translated_text = translate_text(
             input_text=original_text,
             model=ollama_model,
@@ -321,17 +295,14 @@ def translate_srt_file(
             target_lang=target_language,
         )
 
-        # Reconstruct the block with the translated text
         new_block = f"{sequence_number}\n{timestamp}\n{translated_text}"
         translated_blocks.append(new_block)
         print(
             f"translate block number: [bold green]{index}[/bold green] from [bold yellow]{blocks_total_number}[/bold yellow] blocks"
         )
-    # Join the translated blocks back together
     new_content = "\n\n".join(translated_blocks)
 
     try:
-        # Write the new content back to the original file
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(new_content)
         print(f"Successfully translated and updated the file: {file_path}")
